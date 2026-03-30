@@ -1,13 +1,13 @@
 'use client'
 
+import { useState, useEffect, useRef, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { ArrowLeft, LogOut, Send, Sparkles, CheckCircle2 } from 'lucide-react'
-import { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
 import { aiAPI, profileAPI } from '@/lib/api'
 
 const sections = [
@@ -28,7 +28,7 @@ const WELCOME_MESSAGES: Record<string, string> = {
 
 type Message = { id: number; type: 'ai' | 'user'; text: string }
 
-export default function ProfileBuilder() {
+function ProfileBuilderContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const currentSection = searchParams.get('section') || 'personal'
@@ -42,9 +42,7 @@ export default function ProfileBuilder() {
   useEffect(() => {
     const token = localStorage.getItem('token')
     if (!token) { router.push('/login'); return }
-
     profileAPI.getMyProfile().then(data => setProfile(data))
-
     setChatMessages([{
       id: 1,
       type: 'ai',
@@ -59,12 +57,10 @@ export default function ProfileBuilder() {
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return
-
     const userMsg: Message = { id: chatMessages.length + 1, type: 'user', text: inputValue }
     setChatMessages(prev => [...prev, userMsg])
     setInputValue('')
     setIsLoading(true)
-
     try {
       const data = await aiAPI.chat(currentSection, inputValue)
       const aiMsg: Message = {
@@ -73,7 +69,6 @@ export default function ProfileBuilder() {
         text: data.message || 'Thanks! I have saved that information.',
       }
       setChatMessages(prev => [...prev, aiMsg])
-
       profileAPI.getMyProfile().then(updated => {
         setProfile(updated)
         setSaved(true)
@@ -113,7 +108,6 @@ export default function ProfileBuilder() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5">
-      {/* Header */}
       <div className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
           <Link href="/candidate/dashboard" className="flex items-center gap-2 text-muted-foreground hover:text-foreground">
@@ -130,8 +124,6 @@ export default function ProfileBuilder() {
 
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="grid gap-8 lg:grid-cols-3">
-
-          {/* Sidebar */}
           <div className="hidden lg:block space-y-3">
             {sections.map((section, index) => (
               <Link key={section.id} href={`/candidate/profile-builder?section=${section.id}`}>
@@ -160,7 +152,6 @@ export default function ProfileBuilder() {
                 </button>
               </Link>
             ))}
-
             {profile && (
               <div className="mt-4 p-3 rounded-lg border border-border/40 bg-card/50">
                 <p className="text-xs text-muted-foreground">Profile Completion</p>
@@ -169,7 +160,6 @@ export default function ProfileBuilder() {
             )}
           </div>
 
-          {/* Chat */}
           <div className="lg:col-span-2">
             <Card className="border-border/40 bg-card/50 backdrop-blur-sm flex flex-col h-[600px]">
               <CardHeader className="border-b border-border/40">
@@ -241,5 +231,13 @@ export default function ProfileBuilder() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function ProfileBuilder() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <ProfileBuilderContent />
+    </Suspense>
   )
 }
