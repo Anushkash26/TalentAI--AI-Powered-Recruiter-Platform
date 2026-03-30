@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { LogOut, Search, Star, Eye } from 'lucide-react'
+import { LogOut, Search, Star, Eye, Trash2 } from 'lucide-react'
 import { recruiterAPI } from '@/lib/api'
 
 export default function RecruiterDashboard() {
@@ -44,6 +44,12 @@ export default function RecruiterDashboard() {
     loadCandidates(search)
   }
 
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this candidate profile?')) return
+    await recruiterAPI.deleteCandidate(id)
+    loadCandidates(search)
+  }
+
   const handleSignOut = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
@@ -57,9 +63,7 @@ export default function RecruiterDashboard() {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
           <h1 className="text-xl font-bold text-foreground">Recruiter Dashboard</h1>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-muted-foreground">
-              {user?.name}
-            </span>
+            <span className="text-sm text-muted-foreground">{user?.name}</span>
             <Button variant="ghost" onClick={handleSignOut}>
               <LogOut className="h-4 w-4 mr-2" /> Sign Out
             </Button>
@@ -157,16 +161,25 @@ export default function RecruiterDashboard() {
                     </div>
                   )}
 
-                  {/* No skills yet */}
                   {(!candidate.skills || candidate.skills.length === 0) && (
                     <p className="text-xs text-muted-foreground mb-4">No skills listed yet</p>
                   )}
 
-                  <Link href={`/recruiter/candidates/${candidate._id}`}>
-                    <Button variant="outline" className="w-full border-border/40 text-sm hover:border-primary/40">
-                      <Eye className="h-3 w-3 mr-2" /> View Full Profile
+                  {/* Buttons */}
+                  <div className="space-y-2">
+                    <Link href={`/recruiter/candidates/${candidate._id}`}>
+                      <Button variant="outline" className="w-full border-border/40 text-sm hover:border-primary/40">
+                        <Eye className="h-3 w-3 mr-2" /> View Full Profile
+                      </Button>
+                    </Link>
+                    <Button
+                      variant="ghost"
+                      className="w-full text-red-500 hover:text-red-700 hover:bg-red-50 text-sm"
+                      onClick={() => handleDelete(candidate._id)}
+                    >
+                      <Trash2 className="h-3 w-3 mr-2" /> Delete Profile
                     </Button>
-                  </Link>
+                  </div>
                 </CardContent>
               </Card>
             ))}

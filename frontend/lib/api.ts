@@ -94,4 +94,10 @@ export const recruiterAPI = {
     fetch(`${API_BASE}/recruiter/shortlisted`, {
       headers: headers(),
     }).then(r => r.json()),
+
+    deleteCandidate: (id: string) =>
+    fetch(`${API_BASE}/recruiter/candidates/${id}`, {
+      method: 'DELETE',
+      headers: headers(),
+    }).then(r => r.json()),
 }

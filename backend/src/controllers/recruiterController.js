@@ -45,4 +45,14 @@ exports.getShortlisted = async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
+
+  exports.deleteCandidate = async (req, res) => {
+  try {
+    await Profile.findByIdAndDelete(req.params.id)
+    res.json({ message: 'Profile deleted successfully' })
+  } catch (err) {
+    res.status(500).json({ message: err.message })
+  }
+}
+
 };
