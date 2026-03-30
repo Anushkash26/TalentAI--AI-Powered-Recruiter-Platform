@@ -20,8 +20,8 @@ Replace **"Upload Resume"** with **Smart AI Profile Creation** — a conversatio
 
 ---
 ## 🚀 Live Demo
-- Frontend: [Coming Soon]
-- Backend API: [Coming Soon]
+- Frontend: https://talentai-ai-powered-recruiter-plat.vercel.app
+- Backend API: https://talentai-backend-cfny.onrender.com
 
 ## 📋 Demo Credentials
 | Role | Email | Password |

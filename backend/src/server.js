@@ -11,9 +11,14 @@ const app = express();
 
 app.use(helmet());
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5173'],
+  origin: [
+    'http://localhost:3000',
+    'https://talentai-ai-powered-recruiter-plat.vercel.app',
+    /\.vercel\.app$/
+  ],
   credentials: true
 }));
+
 app.use(morgan('dev'));
 app.use(express.json());
 
