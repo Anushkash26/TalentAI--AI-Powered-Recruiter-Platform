@@ -6,8 +6,10 @@ import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, LogOut, MapPin, Mail, Phone, Github, Linkedin, Copy, Check } from 'lucide-react'
+import { ArrowLeft, LogOut, MapPin, Mail, Phone, Github, Linkedin, Copy, Check, Download, Share2 } from 'lucide-react'
 import { profileAPI } from '@/lib/api'
+import jsPDF from 'jspdf'
+import html2canvas from 'html2canvas'
 
 export default function PreviewPage() {
   const router = useRouter()
@@ -16,6 +18,8 @@ export default function PreviewPage() {
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [downloading, setDownloading] = useState(false)
+  const [shareMsg, setShareMsg] = useState('')
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user')
@@ -27,11 +31,55 @@ export default function PreviewPage() {
     })
   }, [])
 
+  const handleDownloadPDF = async () => {
+    setDownloading(true)
+    try {
+      const element = document.getElementById('resume-content')
+      if (!element) return
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+      })
+      const imgData = canvas.toDataURL('image/png')
+      const pdf = new jsPDF('p', 'mm', 'a4')
+      const pdfWidth = pdf.internal.pageSize.getWidth()
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight)
+      pdf.save(`${profile?.personalInfo?.name || 'resume'}_Resume.pdf`)
+    } catch (err) {
+      console.error('PDF error:', err)
+    } finally {
+      setDownloading(false)
+    }
+  }
+
   const handleCopyLink = () => {
     const link = `${window.location.origin}/profile/${profile?.shareId}`
     navigator.clipboard.writeText(link)
     setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    setShareMsg('Link copied to clipboard!')
+    setTimeout(() => {
+      setCopied(false)
+      setShareMsg('')
+    }, 3000)
+  }
+
+  const handleShare = async () => {
+    const link = `${window.location.origin}/profile/${profile?.shareId}`
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${profile?.personalInfo?.name || 'My'} - TalentAI Profile`,
+          text: 'Check out my professional profile on TalentAI!',
+          url: link,
+        })
+      } catch (_) {
+        handleCopyLink()
+      }
+    } else {
+      handleCopyLink()
+    }
   }
 
   const handleSubmit = async () => {
@@ -61,7 +109,7 @@ export default function PreviewPage() {
           <Link href="/candidate/dashboard" className="flex items-center gap-2 text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-4 w-4" /> Back to Dashboard
           </Link>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap justify-end">
             {profile?.status !== 'submitted' ? (
               <Button onClick={handleSubmit} disabled={submitting}
                 className="bg-gradient-to-r from-primary to-accent text-white">
@@ -70,9 +118,15 @@ export default function PreviewPage() {
             ) : (
               <Badge className="bg-green-100 text-green-700 px-3 py-1">✓ Submitted</Badge>
             )}
-            <Button variant="ghost" onClick={handleCopyLink}>
-              {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-              <span className="ml-1">{copied ? 'Copied!' : 'Share'}</span>
+            <Button variant="outline" onClick={handleDownloadPDF} disabled={downloading}>
+              <Download className="h-4 w-4 mr-2" />
+              {downloading ? 'Generating...' : 'Download PDF'}
+            </Button>
+            <Button variant="outline" onClick={handleShare}>
+              {copied
+                ? <><Check className="h-4 w-4 mr-2 text-green-500" /> Copied!</>
+                : <><Share2 className="h-4 w-4 mr-2" /> Share Profile</>
+              }
             </Button>
             <Button variant="ghost" onClick={handleSignOut}>
               <LogOut className="h-4 w-4" />
@@ -81,9 +135,18 @@ export default function PreviewPage() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-4xl px-4 py-8 space-y-6">
+      {/* Share success message */}
+      {shareMsg && (
+        <div className="bg-green-50 border-b border-green-200 text-green-700 text-sm text-center py-2">
+          🔗 {shareMsg} — <span className="font-mono text-xs">{window.location.origin}/profile/{profile?.shareId}</span>
+        </div>
+      )}
+
+      {/* Resume Content */}
+      <div id="resume-content" className="mx-auto max-w-4xl px-4 py-8 space-y-6">
+
         {/* Personal Info */}
-        <Card className="border-border/40 bg-card/50">
+        <Card className="border-border/40 bg-white">
           <CardContent className="p-8">
             <div className="flex items-start gap-6">
               <div className="h-20 w-20 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white text-3xl font-bold shrink-0">
@@ -132,7 +195,7 @@ export default function PreviewPage() {
 
         {/* Skills */}
         {profile?.skills?.length > 0 && (
-          <Card className="border-border/40 bg-card/50">
+          <Card className="border-border/40 bg-white">
             <CardHeader>
               <CardTitle className="text-foreground">Skills</CardTitle>
             </CardHeader>
@@ -146,7 +209,7 @@ export default function PreviewPage() {
 
         {/* Experience */}
         {profile?.experience?.length > 0 && (
-          <Card className="border-border/40 bg-card/50">
+          <Card className="border-border/40 bg-white">
             <CardHeader>
               <CardTitle className="text-foreground">Work Experience</CardTitle>
             </CardHeader>
@@ -164,7 +227,7 @@ export default function PreviewPage() {
 
         {/* Projects */}
         {profile?.projects?.length > 0 && (
-          <Card className="border-border/40 bg-card/50">
+          <Card className="border-border/40 bg-white">
             <CardHeader>
               <CardTitle className="text-foreground">Projects</CardTitle>
             </CardHeader>
@@ -191,7 +254,7 @@ export default function PreviewPage() {
 
         {/* Education */}
         {profile?.education?.length > 0 && (
-          <Card className="border-border/40 bg-card/50">
+          <Card className="border-border/40 bg-white">
             <CardHeader>
               <CardTitle className="text-foreground">Education</CardTitle>
             </CardHeader>
