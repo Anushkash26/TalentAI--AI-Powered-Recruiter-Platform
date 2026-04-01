@@ -74,10 +74,40 @@ exports.chat = async (req, res) => {
     await convo.save()
 
     // Extract structured data if present
+    // Extract structured data if present
     const extractMatch = assistantMessage.match(/<extracted>([\s\S]*?)<\/extracted>/)
     if (extractMatch) {
       try {
         const extracted = JSON.parse(extractMatch[1])
+
+        // Fix skills if AI returned nested object instead of flat array
+        if (extracted.skills && !Array.isArray(extracted.skills)) {
+          const flatSkills = []
+          Object.values(extracted.skills).forEach(val => {
+            if (Array.isArray(val)) flatSkills.push(...val)
+            else if (typeof val === 'string') flatSkills.push(val)
+          })
+          extracted.skills = flatSkills
+        }
+
+        // Fix if AI used wrong key names
+        const possibleSkillKeys = ['programming_languages', 'frontendSkills', 'frontend', 'backend', 'tools', 'databases', 'other_skills']
+        if (!extracted.skills) {
+          const flatSkills = []
+          possibleSkillKeys.forEach(key => {
+            if (extracted[key]) {
+              if (Array.isArray(extracted[key])) flatSkills.push(...extracted[key])
+              else if (typeof extracted[key] === 'object') {
+                Object.values(extracted[key]).forEach(v => {
+                  if (Array.isArray(v)) flatSkills.push(...v)
+                })
+              }
+              delete extracted[key]
+            }
+          })
+          if (flatSkills.length > 0) extracted.skills = flatSkills
+        }
+
         const profile = await Profile.findOne({ user: userId })
         if (profile) {
           Object.assign(profile, extracted)
