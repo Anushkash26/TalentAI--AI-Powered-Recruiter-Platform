@@ -2,7 +2,7 @@
 
 > No resume uploads. No PDF parsing. Just intelligent, structured profile building powered by AI.
 
-Built for Anshumat Foundation Web Development Internship Assignment.....
+Built for Anshumat Foundation Web Development Internship Assignment.
 
 ## 🎯 Problem Statement
 
