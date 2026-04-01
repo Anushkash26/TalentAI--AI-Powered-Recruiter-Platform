@@ -6,10 +6,8 @@ import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, LogOut, MapPin, Mail, Phone, Github, Linkedin, Copy, Check, Download, Share2 } from 'lucide-react'
+import { ArrowLeft, LogOut, MapPin, Mail, Phone, Github, Linkedin, Check, Download, Share2 } from 'lucide-react'
 import { profileAPI } from '@/lib/api'
-import jsPDF from 'jspdf'
-import html2canvas from 'html2canvas'
 
 export default function PreviewPage() {
   const router = useRouter()
@@ -31,22 +29,114 @@ export default function PreviewPage() {
     })
   }, [])
 
-  const handleDownloadPDF = async () => {
+  const handleDownloadPDF = () => {
     setDownloading(true)
     try {
-      const element = document.getElementById('resume-content')
-      if (!element) return
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-      })
-      const imgData = canvas.toDataURL('image/png')
-      const pdf = new jsPDF('p', 'mm', 'a4')
-      const pdfWidth = pdf.internal.pageSize.getWidth()
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight)
-      pdf.save(`${profile?.personalInfo?.name || 'resume'}_Resume.pdf`)
+      const { jsPDF } = require('jspdf')
+      const doc = new jsPDF()
+      let y = 20
+      const name = profile?.personalInfo?.name || user?.name || 'Candidate'
+
+      // Name
+      doc.setFontSize(22)
+      doc.setFont('helvetica', 'bold')
+      doc.text(name, 20, y)
+      y += 10
+
+      // Contact
+      doc.setFontSize(10)
+      doc.setFont('helvetica', 'normal')
+      const contact = [
+        profile?.personalInfo?.email,
+        profile?.personalInfo?.phone,
+        profile?.personalInfo?.location,
+        profile?.personalInfo?.linkedIn,
+        profile?.personalInfo?.github,
+      ].filter(Boolean).join(' | ')
+      if (contact) { doc.text(contact, 20, y); y += 15 }
+
+      // Skills
+      if (profile?.skills?.length > 0) {
+        doc.setFontSize(14)
+        doc.setFont('helvetica', 'bold')
+        doc.text('Skills', 20, y)
+        y += 7
+        doc.setFontSize(10)
+        doc.setFont('helvetica', 'normal')
+        const skillsText = profile.skills.join(', ')
+        const skillLines = doc.splitTextToSize(skillsText, 170)
+        doc.text(skillLines, 20, y)
+        y += skillLines.length * 5 + 10
+      }
+
+      // Experience
+      if (profile?.experience?.length > 0) {
+        doc.setFontSize(14)
+        doc.setFont('helvetica', 'bold')
+        doc.text('Work Experience', 20, y)
+        y += 7
+        profile.experience.forEach((exp: any) => {
+          if (y > 270) { doc.addPage(); y = 20 }
+          doc.setFontSize(11)
+          doc.setFont('helvetica', 'bold')
+          doc.text(`${exp.role} - ${exp.company}`, 20, y)
+          y += 5
+          doc.setFontSize(10)
+          doc.setFont('helvetica', 'italic')
+          doc.text(exp.duration || '', 20, y)
+          y += 5
+          doc.setFont('helvetica', 'normal')
+          const descLines = doc.splitTextToSize(exp.description || '', 170)
+          doc.text(descLines, 20, y)
+          y += descLines.length * 5 + 8
+        })
+      }
+
+      // Projects
+      if (profile?.projects?.length > 0) {
+        if (y > 250) { doc.addPage(); y = 20 }
+        doc.setFontSize(14)
+        doc.setFont('helvetica', 'bold')
+        doc.text('Projects', 20, y)
+        y += 7
+        profile.projects.forEach((proj: any) => {
+          if (y > 270) { doc.addPage(); y = 20 }
+          doc.setFontSize(11)
+          doc.setFont('helvetica', 'bold')
+          doc.text(proj.name || '', 20, y)
+          y += 5
+          doc.setFontSize(10)
+          doc.setFont('helvetica', 'normal')
+          const descLines = doc.splitTextToSize(proj.description || '', 170)
+          doc.text(descLines, 20, y)
+          y += descLines.length * 5 + 5
+          if (proj.techStack?.length > 0) {
+            doc.text(`Tech: ${proj.techStack.join(', ')}`, 20, y)
+            y += 8
+          }
+        })
+      }
+
+      // Education
+      if (profile?.education?.length > 0) {
+        if (y > 250) { doc.addPage(); y = 20 }
+        doc.setFontSize(14)
+        doc.setFont('helvetica', 'bold')
+        doc.text('Education', 20, y)
+        y += 7
+        profile.education.forEach((edu: any) => {
+          doc.setFontSize(11)
+          doc.setFont('helvetica', 'bold')
+          doc.text(edu.degree || '', 20, y)
+          y += 5
+          doc.setFontSize(10)
+          doc.setFont('helvetica', 'normal')
+          doc.text(`${edu.institution} | ${edu.year}`, 20, y)
+          y += 10
+        })
+      }
+
+      doc.save(`${name}_Resume.pdf`)
     } catch (err) {
       console.error('PDF error:', err)
     } finally {
@@ -59,10 +149,7 @@ export default function PreviewPage() {
     navigator.clipboard.writeText(link)
     setCopied(true)
     setShareMsg('Link copied to clipboard!')
-    setTimeout(() => {
-      setCopied(false)
-      setShareMsg('')
-    }, 3000)
+    setTimeout(() => { setCopied(false); setShareMsg('') }, 3000)
   }
 
   const handleShare = async () => {
@@ -74,9 +161,7 @@ export default function PreviewPage() {
           text: 'Check out my professional profile on TalentAI!',
           url: link,
         })
-      } catch (_) {
-        handleCopyLink()
-      }
+      } catch (_) { handleCopyLink() }
     } else {
       handleCopyLink()
     }
@@ -103,7 +188,6 @@ export default function PreviewPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5">
-      {/* Header */}
       <div className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-4">
           <Link href="/candidate/dashboard" className="flex items-center gap-2 text-muted-foreground hover:text-foreground">
@@ -135,17 +219,13 @@ export default function PreviewPage() {
         </div>
       </div>
 
-      {/* Share success message */}
       {shareMsg && (
         <div className="bg-green-50 border-b border-green-200 text-green-700 text-sm text-center py-2">
-          🔗 {shareMsg} — <span className="font-mono text-xs">{window.location.origin}/profile/{profile?.shareId}</span>
+          🔗 {shareMsg}
         </div>
       )}
 
-      {/* Resume Content */}
       <div id="resume-content" className="mx-auto max-w-4xl px-4 py-8 space-y-6">
-
-        {/* Personal Info */}
         <Card className="border-border/40 bg-white">
           <CardContent className="p-8">
             <div className="flex items-start gap-6">
@@ -157,48 +237,21 @@ export default function PreviewPage() {
                   {profile?.personalInfo?.name || user?.name || 'Your Name'}
                 </h1>
                 <div className="mt-2 flex flex-wrap gap-3 text-sm text-muted-foreground">
-                  {profile?.personalInfo?.email && (
-                    <span className="flex items-center gap-1">
-                      <Mail className="h-3 w-3" />{profile.personalInfo.email}
-                    </span>
-                  )}
-                  {profile?.personalInfo?.phone && (
-                    <span className="flex items-center gap-1">
-                      <Phone className="h-3 w-3" />{profile.personalInfo.phone}
-                    </span>
-                  )}
-                  {profile?.personalInfo?.location && (
-                    <span className="flex items-center gap-1">
-                      <MapPin className="h-3 w-3" />{profile.personalInfo.location}
-                    </span>
-                  )}
-                  {profile?.personalInfo?.github && (
-                    <span className="flex items-center gap-1">
-                      <Github className="h-3 w-3" />{profile.personalInfo.github}
-                    </span>
-                  )}
-                  {profile?.personalInfo?.linkedIn && (
-                    <span className="flex items-center gap-1">
-                      <Linkedin className="h-3 w-3" />{profile.personalInfo.linkedIn}
-                    </span>
-                  )}
+                  {profile?.personalInfo?.email && <span className="flex items-center gap-1"><Mail className="h-3 w-3" />{profile.personalInfo.email}</span>}
+                  {profile?.personalInfo?.phone && <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{profile.personalInfo.phone}</span>}
+                  {profile?.personalInfo?.location && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{profile.personalInfo.location}</span>}
+                  {profile?.personalInfo?.github && <span className="flex items-center gap-1"><Github className="h-3 w-3" />{profile.personalInfo.github}</span>}
+                  {profile?.personalInfo?.linkedIn && <span className="flex items-center gap-1"><Linkedin className="h-3 w-3" />{profile.personalInfo.linkedIn}</span>}
                 </div>
-                {profile?.aiSummary && (
-                  <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
-                    {profile.aiSummary}
-                  </p>
-                )}
+                {profile?.aiSummary && <p className="mt-3 text-sm text-muted-foreground leading-relaxed">{profile.aiSummary}</p>}
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Skills */}
         {profile?.skills?.length > 0 && (
           <Card className="border-border/40 bg-white">
-            <CardHeader>
-              <CardTitle className="text-foreground">Skills</CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle className="text-foreground">Skills</CardTitle></CardHeader>
             <CardContent className="flex flex-wrap gap-2">
               {profile.skills.map((skill: string, i: number) => (
                 <Badge key={i} variant="secondary">{skill}</Badge>
@@ -207,12 +260,9 @@ export default function PreviewPage() {
           </Card>
         )}
 
-        {/* Experience */}
         {profile?.experience?.length > 0 && (
           <Card className="border-border/40 bg-white">
-            <CardHeader>
-              <CardTitle className="text-foreground">Work Experience</CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle className="text-foreground">Work Experience</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               {profile.experience.map((exp: any, i: number) => (
                 <div key={i} className="border-l-2 border-primary/30 pl-4">
@@ -225,12 +275,9 @@ export default function PreviewPage() {
           </Card>
         )}
 
-        {/* Projects */}
         {profile?.projects?.length > 0 && (
           <Card className="border-border/40 bg-white">
-            <CardHeader>
-              <CardTitle className="text-foreground">Projects</CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle className="text-foreground">Projects</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               {profile.projects.map((proj: any, i: number) => (
                 <div key={i} className="border-l-2 border-accent/30 pl-4">
@@ -241,23 +288,15 @@ export default function PreviewPage() {
                       <Badge key={j} variant="outline" className="text-xs">{tech}</Badge>
                     ))}
                   </div>
-                  {proj.link && (
-                    <a href={proj.link} target="_blank" className="text-xs text-primary mt-1 block hover:underline">
-                      {proj.link}
-                    </a>
-                  )}
                 </div>
               ))}
             </CardContent>
           </Card>
         )}
 
-        {/* Education */}
         {profile?.education?.length > 0 && (
           <Card className="border-border/40 bg-white">
-            <CardHeader>
-              <CardTitle className="text-foreground">Education</CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle className="text-foreground">Education</CardTitle></CardHeader>
             <CardContent className="space-y-3">
               {profile.education.map((edu: any, i: number) => (
                 <div key={i} className="border-l-2 border-primary/30 pl-4">
@@ -269,7 +308,6 @@ export default function PreviewPage() {
           </Card>
         )}
 
-        {/* Empty state */}
         {!profile?.skills?.length && !profile?.experience?.length && !profile?.projects?.length && (
           <Card className="border-border/40 bg-card/50">
             <CardContent className="p-12 text-center">
