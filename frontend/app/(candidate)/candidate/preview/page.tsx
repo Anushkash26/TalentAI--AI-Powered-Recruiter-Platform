@@ -29,21 +29,20 @@ export default function PreviewPage() {
     })
   }, [])
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
     setDownloading(true)
     try {
-      const { jsPDF } = require('jspdf')
+      const jsPDFModule = await import('jspdf')
+      const jsPDF = jsPDFModule.default
       const doc = new jsPDF()
       let y = 20
       const name = profile?.personalInfo?.name || user?.name || 'Candidate'
 
-      // Name
       doc.setFontSize(22)
       doc.setFont('helvetica', 'bold')
       doc.text(name, 20, y)
       y += 10
 
-      // Contact
       doc.setFontSize(10)
       doc.setFont('helvetica', 'normal')
       const contact = [
@@ -55,7 +54,6 @@ export default function PreviewPage() {
       ].filter(Boolean).join(' | ')
       if (contact) { doc.text(contact, 20, y); y += 15 }
 
-      // Skills
       if (profile?.skills?.length > 0) {
         doc.setFontSize(14)
         doc.setFont('helvetica', 'bold')
@@ -63,13 +61,11 @@ export default function PreviewPage() {
         y += 7
         doc.setFontSize(10)
         doc.setFont('helvetica', 'normal')
-        const skillsText = profile.skills.join(', ')
-        const skillLines = doc.splitTextToSize(skillsText, 170)
+        const skillLines = doc.splitTextToSize(profile.skills.join(', '), 170)
         doc.text(skillLines, 20, y)
         y += skillLines.length * 5 + 10
       }
 
-      // Experience
       if (profile?.experience?.length > 0) {
         doc.setFontSize(14)
         doc.setFont('helvetica', 'bold')
@@ -86,13 +82,12 @@ export default function PreviewPage() {
           doc.text(exp.duration || '', 20, y)
           y += 5
           doc.setFont('helvetica', 'normal')
-          const descLines = doc.splitTextToSize(exp.description || '', 170)
-          doc.text(descLines, 20, y)
-          y += descLines.length * 5 + 8
+          const lines = doc.splitTextToSize(exp.description || '', 170)
+          doc.text(lines, 20, y)
+          y += lines.length * 5 + 8
         })
       }
 
-      // Projects
       if (profile?.projects?.length > 0) {
         if (y > 250) { doc.addPage(); y = 20 }
         doc.setFontSize(14)
@@ -107,9 +102,9 @@ export default function PreviewPage() {
           y += 5
           doc.setFontSize(10)
           doc.setFont('helvetica', 'normal')
-          const descLines = doc.splitTextToSize(proj.description || '', 170)
-          doc.text(descLines, 20, y)
-          y += descLines.length * 5 + 5
+          const lines = doc.splitTextToSize(proj.description || '', 170)
+          doc.text(lines, 20, y)
+          y += lines.length * 5 + 5
           if (proj.techStack?.length > 0) {
             doc.text(`Tech: ${proj.techStack.join(', ')}`, 20, y)
             y += 8
@@ -117,7 +112,6 @@ export default function PreviewPage() {
         })
       }
 
-      // Education
       if (profile?.education?.length > 0) {
         if (y > 250) { doc.addPage(); y = 20 }
         doc.setFontSize(14)
