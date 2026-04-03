@@ -29,114 +29,9 @@ export default function PreviewPage() {
     })
   }, [])
 
-  const handleDownloadPDF = async () => {
-    setDownloading(true)
-    try {
-      const jsPDFModule = await import('jspdf')
-      const jsPDF = jsPDFModule.default
-      const doc = new jsPDF()
-      let y = 20
-      const name = profile?.personalInfo?.name || user?.name || 'Candidate'
-
-      doc.setFontSize(22)
-      doc.setFont('helvetica', 'bold')
-      doc.text(name, 20, y)
-      y += 10
-
-      doc.setFontSize(10)
-      doc.setFont('helvetica', 'normal')
-      const contact = [
-        profile?.personalInfo?.email,
-        profile?.personalInfo?.phone,
-        profile?.personalInfo?.location,
-        profile?.personalInfo?.linkedIn,
-        profile?.personalInfo?.github,
-      ].filter(Boolean).join(' | ')
-      if (contact) { doc.text(contact, 20, y); y += 15 }
-
-      if (profile?.skills?.length > 0) {
-        doc.setFontSize(14)
-        doc.setFont('helvetica', 'bold')
-        doc.text('Skills', 20, y)
-        y += 7
-        doc.setFontSize(10)
-        doc.setFont('helvetica', 'normal')
-        const skillLines = doc.splitTextToSize(profile.skills.join(', '), 170)
-        doc.text(skillLines, 20, y)
-        y += skillLines.length * 5 + 10
-      }
-
-      if (profile?.experience?.length > 0) {
-        doc.setFontSize(14)
-        doc.setFont('helvetica', 'bold')
-        doc.text('Work Experience', 20, y)
-        y += 7
-        profile.experience.forEach((exp: any) => {
-          if (y > 270) { doc.addPage(); y = 20 }
-          doc.setFontSize(11)
-          doc.setFont('helvetica', 'bold')
-          doc.text(`${exp.role} - ${exp.company}`, 20, y)
-          y += 5
-          doc.setFontSize(10)
-          doc.setFont('helvetica', 'italic')
-          doc.text(exp.duration || '', 20, y)
-          y += 5
-          doc.setFont('helvetica', 'normal')
-          const lines = doc.splitTextToSize(exp.description || '', 170)
-          doc.text(lines, 20, y)
-          y += lines.length * 5 + 8
-        })
-      }
-
-      if (profile?.projects?.length > 0) {
-        if (y > 250) { doc.addPage(); y = 20 }
-        doc.setFontSize(14)
-        doc.setFont('helvetica', 'bold')
-        doc.text('Projects', 20, y)
-        y += 7
-        profile.projects.forEach((proj: any) => {
-          if (y > 270) { doc.addPage(); y = 20 }
-          doc.setFontSize(11)
-          doc.setFont('helvetica', 'bold')
-          doc.text(proj.name || '', 20, y)
-          y += 5
-          doc.setFontSize(10)
-          doc.setFont('helvetica', 'normal')
-          const lines = doc.splitTextToSize(proj.description || '', 170)
-          doc.text(lines, 20, y)
-          y += lines.length * 5 + 5
-          if (proj.techStack?.length > 0) {
-            doc.text(`Tech: ${proj.techStack.join(', ')}`, 20, y)
-            y += 8
-          }
-        })
-      }
-
-      if (profile?.education?.length > 0) {
-        if (y > 250) { doc.addPage(); y = 20 }
-        doc.setFontSize(14)
-        doc.setFont('helvetica', 'bold')
-        doc.text('Education', 20, y)
-        y += 7
-        profile.education.forEach((edu: any) => {
-          doc.setFontSize(11)
-          doc.setFont('helvetica', 'bold')
-          doc.text(edu.degree || '', 20, y)
-          y += 5
-          doc.setFontSize(10)
-          doc.setFont('helvetica', 'normal')
-          doc.text(`${edu.institution} | ${edu.year}`, 20, y)
-          y += 10
-        })
-      }
-
-      doc.save(`${name}_Resume.pdf`)
-    } catch (err) {
-      console.error('PDF error:', err)
-    } finally {
-      setDownloading(false)
-    }
-  }
+  const handleDownloadPDF = () => {
+  window.print()
+}
 
   const handleCopyLink = () => {
     const link = `${window.location.origin}/profile/${profile?.shareId}`
@@ -182,7 +77,7 @@ export default function PreviewPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5">
-      <div className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-md">
+      <div className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-md no-print">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-4">
           <Link href="/candidate/dashboard" className="flex items-center gap-2 text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-4 w-4" /> Back to Dashboard
